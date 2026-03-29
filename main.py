@@ -5,7 +5,12 @@ import sys
 
 from model_setup import load_model_and_tokenizer
 from dataset_prep import prepare_dataset
-from reward_func import format_reward_func, correctness_reward_func
+from reward_func import (
+    format_reward_func,
+    correctness_reward_func,
+    argument_fidelity_reward_func,
+    trajectory_order_reward_func,
+)
 from grpo_config import setup_grpo_config
 from trainer import run_training
 from evaluation import rigorous_evaluation, evaluate_model
@@ -50,17 +55,23 @@ if __name__ == "__main__":
     # 1. Load model & tokenizer
     model, tokenizer = load_model_and_tokenizer()
 
-    # 2. Prepare dataset
-    train_dataset = prepare_dataset(tokenizer, num_samples=50, mode=dataset_mode)
+    # 2. Prepare dataset (train + validation split)
+    train_dataset, val_dataset = prepare_dataset(tokenizer, num_samples=50, mode=dataset_mode)
 
     # 3. Define reward functions
-    reward_funcs = [format_reward_func, correctness_reward_func]
+    reward_funcs = [
+        format_reward_func,
+        correctness_reward_func,
+        argument_fidelity_reward_func,
+        trajectory_order_reward_func,
+    ]
 
     # 4. Setup GRPO config
     training_args = setup_grpo_config()
 
-    # 5. Train
-    trainer = run_training(model, tokenizer, train_dataset, reward_funcs, training_args)
+    # 5. Train (with early stopping on val reward)
+    trainer = run_training(model, tokenizer, train_dataset, reward_funcs, training_args,
+                           eval_dataset=val_dataset)
 
     # 6. Rigorous A/B evaluation (runs before clearing training model)
     rigorous_evaluation(adapter_path=training_args.output_dir)

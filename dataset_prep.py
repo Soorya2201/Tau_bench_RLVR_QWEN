@@ -37,10 +37,11 @@ def generate_synthetic_tau2_task(tokenizer):
         tokenize=False,
         add_generation_prompt=True
     )
-    return {"prompt": prompt_text}
+    ground_truth = [{"name": t} for t in expected_tools]
+    return {"prompt": prompt_text, "ground_truth_tools": ground_truth}
 
 
-def prepare_dataset(tokenizer, num_samples=200, mode="both"):
+def prepare_dataset(tokenizer, num_samples=200, mode="both", val_ratio=0.2):
     print(f"Preparing {num_samples} tasks in '{mode}' mode...")
 
     if mode in ["real", "both"]:
@@ -51,9 +52,15 @@ def prepare_dataset(tokenizer, num_samples=200, mode="both"):
             user_msg = next(msg["content"] for msg in example["prompt"] if msg["role"] == "user")
             messages = [{"role": "system", "content": system_msg}, {"role": "user", "content": user_msg}]
             prompt_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-            return {"prompt": prompt_text}
+            # Extract ground truth tools from the completion field if available
+            gt_tools = []
+            if "completion" in example and isinstance(example["completion"], list):
+                for item in example["completion"]:
+                    if isinstance(item, dict) and "name" in item:
+                        gt_tools.append(item)
+            return {"prompt": prompt_text, "ground_truth_tools": gt_tools}
 
-        real_ds = real_ds.map(format_for_grpo).select_columns(["prompt"])
+        real_ds = real_ds.map(format_for_grpo).select_columns(["prompt", "ground_truth_tools"])
         real_list = list(real_ds)
         random.shuffle(real_list)
 
@@ -72,4 +79,10 @@ def prepare_dataset(tokenizer, num_samples=200, mode="both"):
     else:
         raise ValueError("Invalid mode selected.")
 
-    return datasets.Dataset.from_list(final_data)
+    # Split into train / val
+    val_size = max(1, int(len(final_data) * val_ratio))
+    train_data = final_data[:-val_size]
+    val_data = final_data[-val_size:]
+    print(f"  → Train: {len(train_data)} samples, Val: {len(val_data)} samples")
+
+    return datasets.Dataset.from_list(train_data), datasets.Dataset.from_list(val_data)
