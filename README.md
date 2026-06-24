@@ -1,12 +1,20 @@
 # RLVR Pipeline for AfterQuery
 
-Fine-tunes **Qwen2.5-7B-Instruct** on the tau2-bench customer support benchmark using **GRPO** (Group Relative Policy Optimization) via HuggingFace TRL. 
+![License](https://img.shields.io/badge/license-MIT-yellow.svg)
+
+Fine-tunes **Qwen2.5-7B-Instruct** on the tau2-bench customer support benchmark using **GRPO** (Group Relative Policy Optimization) via HuggingFace TRL.
 
 The model is trained to output structured JSON tool-call sequences instead of conversational responses.
 
 ---
 
+## Why this exists
 
+[tau2-bench](https://huggingface.co/datasets/tau2-bench) evaluates whether an LLM can act as a customer-support agent — reading a user request and emitting the *correct tool call* (e.g. `refund_order`, `check_status`) as structured JSON, not a conversational reply. Base instruction-tuned models are good at chatting but inconsistent at strictly-formatted, single-tool-call output: they wrap JSON in prose, invent extra fields, or pick a plausible-sounding tool instead of the correct one.
+
+**RLVR** (Reinforcement Learning from Verifiable Rewards) addresses this by skipping human preference labels entirely — the reward is computed directly from whether the output is valid JSON and whether the tool call is correct, which is exactly the case here: both `format_reward_func` and `correctness_reward_func` are rule-based and verifiable, not learned. **GRPO** was chosen over PPO because it doesn't require training a separate value/critic model — it scores multiple generations per prompt against each other, which is cheaper and more stable for this single-turn, reward-sparse setting.
+
+---
 
 ### Install dependencies
 
@@ -128,6 +136,12 @@ Finetuned Model JSON Formatting Accuracy: 80.0%
 **Larger models (13B–70B):** Lower learning rate to `5e-6`, increase LoRA rank to `32–64`, keep GRPO generations at 4.
 
 **Smaller models (1B–3B):** Raise learning rate to `3e-5`, increase GRPO generations to `8–16`, increase batch size to `4–8`.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
