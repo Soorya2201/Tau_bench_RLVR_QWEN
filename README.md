@@ -1,4 +1,4 @@
-# RLVR Pipeline for AfterQuery
+# Tau-bench RLVR: GRPO fine-tuning Qwen2.5-7B for structured tool calls
 
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
@@ -16,14 +16,10 @@ The model is trained to output structured JSON tool-call sequences instead of co
 
 ---
 
-### Install dependencies
+## Quick start
 
 ```bash
 pip install -r requirements.txt
-```
-## Run my Work 
-
-```bash
 python main.py
 ```
 
@@ -129,6 +125,8 @@ Base Model JSON Formatting Accuracy: 40.0%
 Finetuned Model JSON Formatting Accuracy: 80.0%
 ```
 
+**Scope of this result:** the A/B check in `evaluation.py` runs on **5 held-out prompts**, so 40% → 80% is 2/5 → 4/5 valid JSON tool calls after a 75-step run. It measures *format* compliance, not tool-choice correctness, so it shows that the reward signal works. It is not a benchmark score. Next step: evaluate on the full tau2-bench test split and report tool-choice accuracy alongside format accuracy.
+
 ---
 
 ## Scaling
@@ -147,4 +145,4 @@ MIT — see [LICENSE](LICENSE) for details.
 
 ## Author
 
-Soorya Narayanan V — AfterQuery ML/AI Research Internship Take-Home
+Soorya Narayanan V — AfterQuery ML/AI Research Internship Take-Home · [GitHub](https://github.com/Soorya2201) · [LinkedIn](https://www.linkedin.com/in/soorya-venkat)
